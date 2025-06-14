@@ -1,0 +1,32 @@
+🤖 CONFIGURACIÓN TELEGRAM BOT
+
+1. CREAR BOT EN TELEGRAM:
+   - Abre Telegram y busca @BotFather
+   - Envía /newbot
+   - Elige un nombre para tu bot
+   - Elige un username (debe terminar en 'bot')
+   - Copia el TOKEN que te da
+
+2. OBTENER TU CHAT ID:
+   - Envía un mensaje a @userinfobot
+   - Te dirá tu Chat ID (ejemplo: 123456789)
+
+3. CONFIGURAR VARIABLES:
+   Crea un archivo .env en la raíz del proyecto:
+   
+   TELEGRAM_BOT_TOKEN=tu_token_aqui
+   TELEGRAM_CHAT_ID=tu_chat_id_aqui
+   
+   Ejemplo:
+   TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+   TELEGRAM_CHAT_ID=987654321
+
+4. PROBAR:
+   - Ejecuta npm start
+   - Envía el link a alguien
+   - Deberías recibir mensajes en Telegram
+
+¡IMPORTANTE!:
+- Nunca compartas tu token
+- El bot solo funcionará si configuras las variables
+- Los videos se enviarán automáticamente a tu Telegram 

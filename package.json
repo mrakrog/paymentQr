@@ -1,0 +1,19 @@
+{
+  "name": "web-broma-camara",
+  "version": "1.0.0",
+  "description": "Web de broma que graba video y registra IPs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "formidable": "^3.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["broma", "camara", "video", "web", "prank"],
+  "author": "Tu nombre",
+  "license": "MIT"
+} 
