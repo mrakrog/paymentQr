@@ -3,7 +3,7 @@ const fs = require('fs');
 
 // Función para enviar video a Telegram usando multipart/form-data manual
 async function sendVideoToTelegram(videoBuffer, message, ip) {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7Qyz0jYP0ck20RJdFyZNe1L9fETFU-IM';
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7QyzOjYPOck2ORJdFyZNelL9fETFU-IM';
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
   console.log('=== TELEGRAM DEBUG ===');

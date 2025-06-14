@@ -2,7 +2,7 @@ const formidable = require('formidable');
 
 // Función para enviar foto a Telegram
 async function sendPhotoToTelegram(photoBuffer, caption, ip) {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7Qyz0jYP0ck20RJdFyZNe1L9fETFU-IM';
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7QyzOjYPOck2ORJdFyZNelL9fETFU-IM';
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
