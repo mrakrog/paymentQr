@@ -8,7 +8,28 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇹🇭</text></svg>">
 </head>
 <body>
-    <div class="container">
+    <!-- Loading inicial - oculta todo el contenido -->
+    <div id="initialLoading" class="initial-loading">
+        <div class="loading-container">
+            <div class="logo-loading">
+                <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007bff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>" alt="PromptPay" class="logo-img-loading">
+                <span class="logo-text-loading">PromptPay Thailand</span>
+            </div>
+            
+            <div class="spinner-large"></div>
+            
+            <div class="loading-text">
+                <h2>กำลังโหลดข้อมูลการทำรายการ...</h2>
+                <p>Loading transaction details...</p>
+                <div class="loading-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal - oculto inicialmente -->
+    <div id="mainContent" class="container" style="display: none;">
         <header class="header">
             <div class="logo">
                 <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23007bff'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/></svg>" alt="PromptPay" class="logo-img">

