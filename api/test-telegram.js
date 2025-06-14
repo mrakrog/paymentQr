@@ -1,6 +1,6 @@
 // Endpoint para probar la conexión con Telegram
 module.exports = async (req, res) => {
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8083680161:AAFw7sJh6ckiRHkgMS3WsC6J0Ya8Q5aPwE';
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7Qyz0jYP0ck20RJdFyZNe1L9fETFU-IM';
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
   console.log('=== TEST TELEGRAM ===');
